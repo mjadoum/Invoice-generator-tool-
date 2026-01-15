@@ -613,15 +613,48 @@ function generatePDF() {
     
     // Table rows
     doc.setFont('helvetica', 'normal');
-    doc.setFontSize(10);
+    doc.setFontSize(9);
     
     items.forEach(item => {
         if (item.description || item.qty > 0) {
             const descLines = item.description.split('\n').filter(line => line.trim());
             
-            // Calculate row height based on description lines
-            const lineHeight = 5;
-            const rowHeight = Math.max(descLines.length * lineHeight + 4, 10);
+            // Wrap each description line if too long
+            const maxCharsPerLine = 70;
+            const wrappedLines = [];
+            
+            descLines.forEach(line => {
+                const bulletLine = `• ${line}`;
+                if (bulletLine.length <= maxCharsPerLine) {
+                    wrappedLines.push(bulletLine);
+                } else {
+                    // Split long lines
+                    let remaining = line;
+                    let isFirst = true;
+                    while (remaining.length > 0) {
+                        const prefix = isFirst ? '• ' : '  ';
+                        const maxLen = maxCharsPerLine - prefix.length;
+                        
+                        // Find a good break point (space)
+                        let breakPoint = maxLen;
+                        if (remaining.length > maxLen) {
+                            const lastSpace = remaining.substring(0, maxLen).lastIndexOf(' ');
+                            if (lastSpace > maxLen * 0.5) {
+                                breakPoint = lastSpace;
+                            }
+                        }
+                        
+                        const chunk = remaining.substring(0, breakPoint).trim();
+                        wrappedLines.push(prefix + chunk);
+                        remaining = remaining.substring(breakPoint).trim();
+                        isFirst = false;
+                    }
+                }
+            });
+            
+            // Calculate row height based on wrapped lines
+            const lineHeight = 4.5;
+            const rowHeight = Math.max(wrappedLines.length * lineHeight + 4, 10);
             
             // Check if we need a new page
             if (y + rowHeight > 265) {
@@ -629,19 +662,18 @@ function generatePDF() {
                 y = 20;
             }
             
-            // Description with bullets
+            // Description with bullets - full text
             doc.setTextColor(0, 0, 0);
             let descY = y;
-            descLines.forEach(line => {
-                const truncatedLine = line.length > 55 ? line.substring(0, 55) + '...' : line;
-                doc.text(`• ${truncatedLine}`, margin + 2, descY);
+            wrappedLines.forEach(line => {
+                doc.text(line, margin + 2, descY);
                 descY += lineHeight;
             });
             
             // Rate, Qty, Amount - aligned with first line of description
-            doc.text(`${currency}${item.rate}`, margin + 115, y);
-            doc.text(`${item.qty}${item.unit}`, margin + 140, y);
-            doc.text(`${currency}${item.amount.toFixed(2)}`, margin + 162, y);
+            doc.text(`${currency}${item.rate}`, margin + 120, y);
+            doc.text(`${item.qty}${item.unit}`, margin + 145, y);
+            doc.text(`${currency}${item.amount.toFixed(2)}`, margin + 168, y);
             
             y += rowHeight;
             
