@@ -78,8 +78,14 @@
             gap: 15px;
         }
 
+        .form-row-3 {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 15px;
+        }
+
         @media (max-width: 600px) {
-            .form-row {
+            .form-row, .form-row-3 {
                 grid-template-columns: 1fr;
             }
         }
@@ -213,132 +219,185 @@
             background: white;
             border: 1px solid #e0e0e0;
             border-radius: 8px;
-            padding: 30px;
+            padding: 25px;
             font-family: Arial, sans-serif;
-            font-size: 12px;
+            font-size: 11px;
             min-height: 600px;
         }
 
         .preview-header {
-            display: flex;
-            justify-content: space-between;
-            padding-bottom: 20px;
-            border-bottom: 2px solid #7E7E7E;
-            margin-bottom: 20px;
+            display: grid;
+            grid-template-columns: 120px 1fr 140px;
+            gap: 15px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #7E7E7E;
+            margin-bottom: 15px;
         }
 
         .preview-logo {
-            font-size: 24px;
-            font-weight: bold;
-            color: #1a73e8;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
-        .preview-business {
-            text-align: left;
+        .preview-logo img {
+            max-width: 110px;
+            height: auto;
         }
 
         .preview-business h2 {
-            font-size: 16px;
-            margin-bottom: 10px;
+            font-size: 14px;
+            margin-bottom: 8px;
+            font-weight: bold;
         }
 
         .preview-business p {
-            color: #666;
+            color: #333;
             line-height: 1.6;
+            font-size: 11px;
         }
 
         .preview-invoice-details {
-            text-align: right;
+            text-align: left;
+            padding-left: 15px;
         }
 
-        .preview-invoice-details h3 {
-            font-size: 14px;
-            margin-bottom: 5px;
+        .preview-invoice-details .inv-title {
+            font-size: 11px;
+            font-weight: bold;
+            margin-bottom: 3px;
+        }
+
+        .preview-invoice-details .inv-number {
+            font-size: 11px;
+            margin-bottom: 12px;
         }
 
         .preview-invoice-details .label {
             font-weight: bold;
             color: #333;
-            margin-top: 10px;
+            font-size: 11px;
         }
 
         .preview-invoice-details .value {
-            color: #666;
-        }
-
-        .preview-balance {
-            font-size: 16px;
-            font-weight: bold;
             color: #333;
-            margin-top: 15px;
-        }
-
-        .preview-client {
-            margin: 20px 0;
-            padding-bottom: 20px;
-            border-bottom: 1px solid #e0e0e0;
-        }
-
-        .preview-client h4 {
-            color: #666;
             font-size: 11px;
             margin-bottom: 10px;
         }
 
+        .preview-balance-box {
+            margin-top: 10px;
+        }
+
+        .preview-balance-box .balance-label {
+            font-weight: bold;
+            font-size: 11px;
+        }
+
+        .preview-balance-box .balance-value {
+            font-size: 11px;
+        }
+
+        .preview-client-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 15px;
+            padding: 15px 0;
+            border-bottom: 1px solid #7E7E7E;
+        }
+
+        .preview-client h4 {
+            color: #333;
+            font-size: 10px;
+            margin-bottom: 8px;
+            font-weight: normal;
+        }
+
         .preview-client h3 {
             font-size: 14px;
-            margin-bottom: 5px;
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+
+        .preview-client p {
+            font-size: 11px;
+            line-height: 1.5;
+            color: #333;
+        }
+
+        .preview-address h4 {
+            font-size: 11px;
+            font-weight: bold;
+            margin-bottom: 8px;
+            color: #333;
+        }
+
+        .preview-address p {
+            font-size: 11px;
+            line-height: 1.5;
+            color: #333;
         }
 
         .preview-table {
             width: 100%;
             border-collapse: collapse;
-            margin: 20px 0;
+            margin: 15px 0;
         }
 
         .preview-table th {
-            background: #f5f5f5;
-            padding: 12px 8px;
+            padding: 10px 5px;
             text-align: left;
-            border-top: 2px solid #7E7E7E;
-            border-bottom: 2px solid #7E7E7E;
+            border-top: 1px solid #7E7E7E;
+            border-bottom: 1px solid #7E7E7E;
             font-weight: bold;
+            font-size: 12px;
         }
 
-        .preview-table th:nth-child(2),
-        .preview-table th:nth-child(3),
-        .preview-table th:nth-child(4) {
+        .preview-table th:nth-child(2) {
             text-align: center;
-            width: 80px;
+            width: 70px;
+        }
+
+        .preview-table th:nth-child(3) {
+            text-align: center;
+            width: 70px;
         }
 
         .preview-table th:last-child {
             text-align: right;
+            width: 80px;
         }
 
         .preview-table td {
-            padding: 12px 8px;
+            padding: 12px 5px;
             border-bottom: 1px solid #e0e0e0;
             vertical-align: top;
+            font-size: 11px;
         }
 
         .preview-table td:nth-child(2),
         .preview-table td:nth-child(3) {
             text-align: center;
+            vertical-align: top;
         }
 
         .preview-table td:last-child {
             text-align: right;
+            vertical-align: top;
+        }
+
+        .preview-table .desc-cell {
+            line-height: 1.7;
         }
 
         .preview-totals {
             display: flex;
             justify-content: flex-end;
-            margin: 20px 0;
+            margin: 15px 0;
         }
 
         .preview-totals-table {
-            width: 250px;
+            width: 200px;
         }
 
         .preview-totals-row {
@@ -346,35 +405,39 @@
             justify-content: space-between;
             padding: 8px 0;
             border-bottom: 1px solid #e0e0e0;
+            font-size: 11px;
         }
 
         .preview-totals-row.total {
             font-weight: bold;
-            font-size: 14px;
-            border-bottom: 2px solid #7E7E7E;
+            font-size: 12px;
+            border-bottom: 1px solid #7E7E7E;
         }
 
         .preview-totals-row.balance {
             font-weight: bold;
-            font-size: 16px;
+            font-size: 12px;
             color: #333;
             border: none;
+            padding-top: 10px;
         }
 
         .preview-payment {
-            margin-top: 30px;
-            padding-top: 20px;
-            border-top: 2px solid #7E7E7E;
+            margin-top: 20px;
+            padding-top: 15px;
+            border-top: 1px solid #7E7E7E;
         }
 
         .preview-payment h4 {
-            font-size: 14px;
-            margin-bottom: 15px;
+            font-size: 12px;
+            margin-bottom: 12px;
+            font-weight: bold;
         }
 
         .preview-payment p {
-            margin-bottom: 5px;
-            color: #666;
+            margin-bottom: 4px;
+            color: #333;
+            font-size: 11px;
         }
 
         .preview-payment strong {
@@ -382,10 +445,10 @@
         }
 
         .preview-footer {
-            margin-top: 20px;
-            padding-top: 15px;
-            border-top: 1px solid #e0e0e0;
-            color: #666;
+            margin-top: 15px;
+            padding-top: 12px;
+            border-top: 1px solid #7E7E7E;
+            color: #333;
             font-size: 11px;
         }
 
@@ -406,6 +469,37 @@
             font-size: 1.8rem;
             font-weight: bold;
             color: #667eea;
+        }
+
+        .bank-section {
+            margin-top: 25px;
+            padding-top: 20px;
+            border-top: 1px solid #e0e0e0;
+        }
+
+        .logo-upload {
+            border: 2px dashed #e0e0e0;
+            border-radius: 8px;
+            padding: 15px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .logo-upload:hover {
+            border-color: #667eea;
+            background: #f8f9ff;
+        }
+
+        .logo-upload img {
+            max-width: 150px;
+            max-height: 50px;
+        }
+
+        .logo-upload-text {
+            color: #666;
+            font-size: 0.85rem;
+            margin-top: 8px;
         }
     </style>
 </head>
@@ -449,6 +543,18 @@
                             <option value="$">$ USD</option>
                             <option value="€">€ EUR</option>
                         </select>
+                    </div>
+                </div>
+
+                <!-- Logo Upload -->
+                <div class="form-group">
+                    <label>Your Logo</label>
+                    <div class="logo-upload" onclick="document.getElementById('logoInput').click()">
+                        <div id="logoPreviewContainer">
+                            <img id="logoPreviewImg" src="logo.png" alt="Logo">
+                        </div>
+                        <input type="file" id="logoInput" accept="image/*" style="display: none;" onchange="handleLogoUpload(event)">
+                        <p class="logo-upload-text">Click to change logo</p>
                     </div>
                 </div>
 
@@ -500,6 +606,25 @@
                     <button type="button" class="add-item-btn" onclick="addItem()">
                         + Add Line Item
                     </button>
+                </div>
+
+                <!-- Bank Details Section -->
+                <div class="bank-section">
+                    <h3 class="section-title">🏦 Payment Details</h3>
+                    <div class="form-row-3">
+                        <div class="form-group">
+                            <label>Account Name</label>
+                            <input type="text" id="bankName" value="Mustafa Jadoun">
+                        </div>
+                        <div class="form-group">
+                            <label>Sort Code</label>
+                            <input type="text" id="bankSortCode" value="40-12-62" placeholder="00-00-00">
+                        </div>
+                        <div class="form-group">
+                            <label>Account Number</label>
+                            <input type="text" id="bankAccountNumber" value="44225368" placeholder="00000000">
+                        </div>
+                    </div>
                 </div>
 
                 <div class="totals-display">
