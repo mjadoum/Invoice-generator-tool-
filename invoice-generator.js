@@ -18,11 +18,6 @@ const CONFIG = {
         phone: "07460032396",
         email: "Mjadoon133@gmail.com"
     },
-    bank: {
-        name: "Mustafa Jadoun",
-        sortCode: "04-00-04",
-        accountNumber: "33893230"
-    },
     defaults: {
         rate: 25,
         currency: "£"
@@ -34,6 +29,7 @@ const CONFIG = {
 // ============================================================
 let items = [];
 let itemCounter = 0;
+let logoDataUrl = null;
 
 // ============================================================
 // INITIALIZATION
@@ -49,12 +45,39 @@ document.addEventListener('DOMContentLoaded', function() {
     // Add first item
     addItem();
     
+    // Load default logo
+    loadDefaultLogo();
+    
     // Add event listeners for live preview
     addEventListeners();
     
     // Initial preview render
-    updatePreview();
+    setTimeout(updatePreview, 100);
 });
+
+function loadDefaultLogo() {
+    const img = document.getElementById('logoPreviewImg');
+    if (img && img.src) {
+        // Create a canvas to convert the image to data URL
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        
+        const tempImg = new Image();
+        tempImg.crossOrigin = 'anonymous';
+        tempImg.onload = function() {
+            canvas.width = tempImg.width;
+            canvas.height = tempImg.height;
+            ctx.drawImage(tempImg, 0, 0);
+            try {
+                logoDataUrl = canvas.toDataURL('image/png');
+                updatePreview();
+            } catch (e) {
+                console.log('Could not load default logo');
+            }
+        };
+        tempImg.src = 'logo.png';
+    }
+}
 
 function generateInvoiceNumber() {
     const date = new Date();
@@ -74,6 +97,22 @@ function addEventListeners() {
 }
 
 // ============================================================
+// LOGO HANDLING
+// ============================================================
+function handleLogoUpload(event) {
+    const file = event.target.files[0];
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            logoDataUrl = e.target.result;
+            document.getElementById('logoPreviewImg').src = logoDataUrl;
+            updatePreview();
+        };
+        reader.readAsDataURL(file);
+    }
+}
+
+// ============================================================
 // ITEM MANAGEMENT
 // ============================================================
 function addItem() {
@@ -87,10 +126,10 @@ function addItem() {
                 <button type="button" class="remove-item" onclick="removeItem(${itemId})" title="Remove item">×</button>
             </div>
             <div class="form-group">
-                <label>Description</label>
+                <label>Description (each line = bullet point)</label>
                 <textarea 
                     id="desc-${itemId}" 
-                    placeholder="Enter work description (each line becomes a bullet point)"
+                    placeholder="Development and implementation of custom CMS&#10;Creation of gallery templates&#10;Migration of image galleries"
                     oninput="updateItemAndPreview()"
                 ></textarea>
             </div>
@@ -107,7 +146,7 @@ function addItem() {
                     >
                 </div>
                 <div class="form-group">
-                    <label>Quantity</label>
+                    <label>Hours/Qty</label>
                     <input 
                         type="number" 
                         id="qty-${itemId}" 
@@ -120,10 +159,9 @@ function addItem() {
                 <div class="form-group">
                     <label>Unit</label>
                     <select id="unit-${itemId}" onchange="updateItemAndPreview()">
-                        <option value="hrs">Hours</option>
-                        <option value="days">Days</option>
-                        <option value="items">Items</option>
-                        <option value="pages">Pages</option>
+                        <option value="hrs">hrs</option>
+                        <option value="days">days</option>
+                        <option value="items">items</option>
                     </select>
                 </div>
                 <div class="form-group">
@@ -133,7 +171,7 @@ function addItem() {
                         id="amount-${itemId}" 
                         value="${CONFIG.defaults.currency}${CONFIG.defaults.rate.toFixed(2)}" 
                         readonly
-                        style="background: #f0f0f0;"
+                        style="background: #f0f0f0; font-weight: bold;"
                     >
                 </div>
             </div>
@@ -226,6 +264,11 @@ function updatePreview() {
     const clientCity = document.getElementById('clientCity').value;
     const clientPostcode = document.getElementById('clientPostcode').value;
     
+    // Bank details
+    const bankName = document.getElementById('bankName').value;
+    const bankSortCode = document.getElementById('bankSortCode').value;
+    const bankAccountNumber = document.getElementById('bankAccountNumber').value;
+    
     // Format date
     const formattedDate = invoiceDate ? formatDate(invoiceDate) : formatDate(new Date());
     
@@ -240,7 +283,7 @@ function updatePreview() {
             
             itemsHtml += `
                 <tr>
-                    <td>${descHtml}</td>
+                    <td class="desc-cell">${descHtml}</td>
                     <td>${currency}${item.rate}</td>
                     <td>${item.qty}${item.unit}</td>
                     <td>${currency}${item.amount.toFixed(2)}</td>
@@ -249,53 +292,66 @@ function updatePreview() {
         }
     });
     
+    // Logo HTML
+    const logoHtml = logoDataUrl 
+        ? `<img src="${logoDataUrl}" alt="Logo" style="max-width: 110px; height: auto;">` 
+        : `<div style="font-size: 24px; font-weight: bold; color: #c41e3a;">&lt;/&gt; Web developer</div>`;
+    
     // Build preview HTML
     const previewHtml = `
         <div class="preview-header">
-            <div>
-                <div class="preview-logo">MJ</div>
-                <div class="preview-business">
-                    <h2>${CONFIG.business.name}</h2>
-                    <p>
-                        ${CONFIG.business.title}<br>
-                        ${CONFIG.business.address}<br>
-                        ${CONFIG.business.city}<br>
-                        ${CONFIG.business.postcode}<br>
-                        ${CONFIG.business.phone}<br>
-                        <span style="color: #0563C1;">${CONFIG.business.email}</span>
-                    </p>
-                </div>
+            <div class="preview-logo">
+                ${logoHtml}
+            </div>
+            <div class="preview-business">
+                <h2>${CONFIG.business.name}</h2>
+                <p>
+                    ${CONFIG.business.title}<br>
+                    ${CONFIG.business.address}<br>
+                    ${CONFIG.business.city}<br>
+                    ${CONFIG.business.postcode}<br>
+                    ${CONFIG.business.phone}<br>
+                    <span style="color: #0563C1;">${CONFIG.business.email}</span>
+                </p>
             </div>
             <div class="preview-invoice-details">
-                <h3>INVOICE</h3>
-                <div class="value">${invoiceNumber}</div>
+                <div class="inv-title">INVOICE</div>
+                <div class="inv-number">${invoiceNumber}</div>
+                
                 <div class="label">DATE</div>
                 <div class="value">${formattedDate}</div>
+                
                 <div class="label">DUE</div>
                 <div class="value">${dueTerms}</div>
-                <div class="preview-balance">
-                    BALANCE DUE<br>
-                    GBP ${currency}${total.toFixed(2)}
+                
+                <div class="preview-balance-box">
+                    <div class="balance-label">BALANCE DUE</div>
+                    <div class="balance-value">GBP ${currency}${total.toFixed(2)}</div>
                 </div>
             </div>
         </div>
         
-        <div class="preview-client">
-            <h4>BILL TO</h4>
-            <h3>${clientName}</h3>
-            <p>
-                ${clientPhone ? clientPhone + '<br>' : ''}
-                ${clientMobile ? clientMobile + '<br>' : ''}
-                ${clientEmail ? '<span style="color: #0563C1;">' + clientEmail + '</span><br>' : ''}
-            </p>
-            ${clientAddress || clientCity || clientPostcode ? `
-                <p style="margin-top: 10px;">
-                    <strong>Address:</strong><br>
-                    ${clientAddress ? clientAddress + '<br>' : ''}
-                    ${clientCity ? clientCity + '<br>' : ''}
-                    ${clientPostcode || ''}
+        <div class="preview-client-section">
+            <div class="preview-client">
+                <h4>BILL TO</h4>
+                <h3>${clientName}</h3>
+                <p>
+                    ${clientPhone ? clientPhone + '<br>' : ''}
+                    ${clientMobile ? clientMobile + '<br>' : ''}
+                    ${clientEmail ? '<span style="color: #0563C1;">' + clientEmail + '</span>' : ''}
                 </p>
-            ` : ''}
+            </div>
+            <div class="preview-address">
+                ${clientAddress || clientCity || clientPostcode ? `
+                    <h4>Address:</h4>
+                    <p>
+                        ${clientAddress ? clientAddress + '<br>' : ''}
+                        ${clientCity ? clientCity + '<br>' : ''}
+                        ${clientPostcode || ''}
+                    </p>
+                ` : ''}
+            </div>
+            <div></div>
         </div>
         
         <table class="preview-table">
@@ -332,9 +388,9 @@ function updatePreview() {
         <div class="preview-payment">
             <h4>PAYMENT INSTRUCTIONS:</h4>
             <p>Please transfer the payment to the following account:</p>
-            <p><strong>Name:</strong> ${CONFIG.bank.name}</p>
-            <p><strong>Sort Code:</strong> ${CONFIG.bank.sortCode}</p>
-            <p><strong>Account Number:</strong> ${CONFIG.bank.accountNumber}</p>
+            <p><strong>Name:</strong> ${bankName}</p>
+            <p><strong>Sort Code:</strong> ${bankSortCode}</p>
+            <p><strong>Account Number:</strong> ${bankAccountNumber}</p>
         </div>
         
         <div class="preview-footer">
@@ -377,6 +433,11 @@ function generatePDF() {
     const clientCity = document.getElementById('clientCity').value;
     const clientPostcode = document.getElementById('clientPostcode').value;
     
+    // Bank details
+    const bankName = document.getElementById('bankName').value;
+    const bankSortCode = document.getElementById('bankSortCode').value;
+    const bankAccountNumber = document.getElementById('bankAccountNumber').value;
+    
     const formattedDate = invoiceDate ? formatDate(invoiceDate) : formatDate(new Date());
     
     // Page settings
@@ -388,82 +449,95 @@ function generatePDF() {
     
     // ===== HEADER =====
     // Logo
-    doc.setFontSize(28);
-    doc.setTextColor(26, 115, 232);
-    doc.setFont('helvetica', 'bold');
-    doc.text('MJ', margin, y + 10);
+    if (logoDataUrl) {
+        try {
+            doc.addImage(logoDataUrl, 'PNG', margin, y, 30, 10);
+        } catch (e) {
+            // Fallback text if image fails
+            doc.setFontSize(12);
+            doc.setTextColor(196, 30, 58);
+            doc.setFont('helvetica', 'bold');
+            doc.text('</> Web developer', margin, y + 7);
+        }
+    } else {
+        doc.setFontSize(12);
+        doc.setTextColor(196, 30, 58);
+        doc.setFont('helvetica', 'bold');
+        doc.text('</> Web developer', margin, y + 7);
+    }
     
-    // Business Name
+    // Business Name - positioned to the right of logo
+    const businessX = margin + 45;
     doc.setFontSize(14);
     doc.setTextColor(0, 0, 0);
-    doc.text(CONFIG.business.name, margin + 50, y);
+    doc.setFont('helvetica', 'bold');
+    doc.text(CONFIG.business.name, businessX, y);
     
     // Business Details
     doc.setFontSize(10);
     doc.setFont('helvetica', 'normal');
-    doc.setTextColor(100, 100, 100);
-    y += 6;
-    doc.text(CONFIG.business.title, margin + 50, y);
+    doc.setTextColor(51, 51, 51);
     y += 5;
-    doc.text(CONFIG.business.address, margin + 50, y);
-    y += 5;
-    doc.text(CONFIG.business.city, margin + 50, y);
-    y += 5;
-    doc.text(CONFIG.business.postcode, margin + 50, y);
-    y += 5;
-    doc.text(CONFIG.business.phone, margin + 50, y);
-    y += 5;
+    doc.text(CONFIG.business.title, businessX, y);
+    y += 4;
+    doc.text(CONFIG.business.address, businessX, y);
+    y += 4;
+    doc.text(CONFIG.business.city, businessX, y);
+    y += 4;
+    doc.text(CONFIG.business.postcode, businessX, y);
+    y += 4;
+    doc.text(CONFIG.business.phone, businessX, y);
+    y += 4;
     doc.setTextColor(5, 99, 193);
-    doc.text(CONFIG.business.email, margin + 50, y);
+    doc.text(CONFIG.business.email, businessX, y);
     
     // Invoice Details (right side)
     let rightX = pageWidth - margin;
     let rightY = 15;
     
-    doc.setFontSize(12);
+    doc.setFontSize(11);
     doc.setTextColor(0, 0, 0);
     doc.setFont('helvetica', 'bold');
     doc.text('INVOICE', rightX, rightY, { align: 'right' });
-    rightY += 6;
+    rightY += 4;
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(10);
     doc.text(invoiceNumber, rightX, rightY, { align: 'right' });
     
-    rightY += 10;
+    rightY += 8;
     doc.setFont('helvetica', 'bold');
     doc.text('DATE', rightX, rightY, { align: 'right' });
-    rightY += 5;
+    rightY += 4;
     doc.setFont('helvetica', 'normal');
     doc.text(formattedDate, rightX, rightY, { align: 'right' });
     
-    rightY += 10;
+    rightY += 8;
     doc.setFont('helvetica', 'bold');
     doc.text('DUE', rightX, rightY, { align: 'right' });
-    rightY += 5;
+    rightY += 4;
     doc.setFont('helvetica', 'normal');
     doc.text(dueTerms, rightX, rightY, { align: 'right' });
     
-    rightY += 10;
+    rightY += 8;
     doc.setFont('helvetica', 'bold');
     doc.text('BALANCE DUE', rightX, rightY, { align: 'right' });
-    rightY += 5;
-    doc.setFontSize(12);
+    rightY += 4;
     doc.text(`GBP ${currency}${total.toFixed(2)}`, rightX, rightY, { align: 'right' });
     
     // Separator line
-    y = 55;
+    y = 50;
     doc.setDrawColor(126, 126, 126);
-    doc.setLineWidth(0.5);
+    doc.setLineWidth(0.3);
     doc.line(margin, y, pageWidth - margin, y);
     
     // ===== BILL TO =====
-    y += 10;
+    y += 8;
     doc.setFontSize(9);
-    doc.setTextColor(100, 100, 100);
+    doc.setTextColor(51, 51, 51);
     doc.setFont('helvetica', 'normal');
     doc.text('BILL TO', margin, y);
     
-    y += 6;
+    y += 5;
     doc.setFontSize(12);
     doc.setTextColor(0, 0, 0);
     doc.setFont('helvetica', 'bold');
@@ -471,69 +545,75 @@ function generatePDF() {
     
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(10);
-    doc.setTextColor(100, 100, 100);
+    doc.setTextColor(51, 51, 51);
     
     if (clientPhone) {
         y += 5;
         doc.text(clientPhone, margin, y);
     }
     if (clientMobile) {
-        y += 5;
+        y += 4;
         doc.text(clientMobile, margin, y);
     }
     if (clientEmail) {
-        y += 5;
+        y += 4;
         doc.setTextColor(5, 99, 193);
         doc.text(clientEmail, margin, y);
-        doc.setTextColor(100, 100, 100);
+        doc.setTextColor(51, 51, 51);
     }
     
     // Address (middle column)
     if (clientAddress || clientCity || clientPostcode) {
-        let addrY = 65;
+        let addrY = 58;
+        const addrX = margin + 55;
         doc.setFont('helvetica', 'bold');
         doc.setTextColor(0, 0, 0);
-        doc.text('Address:', margin + 60, addrY);
+        doc.text('Address:', addrX, addrY);
         doc.setFont('helvetica', 'normal');
-        doc.setTextColor(100, 100, 100);
+        doc.setTextColor(51, 51, 51);
         addrY += 5;
         if (clientAddress) {
-            doc.text(clientAddress, margin + 60, addrY);
-            addrY += 5;
+            doc.text(clientAddress, addrX, addrY);
+            addrY += 4;
         }
         if (clientCity) {
-            doc.text(clientCity, margin + 60, addrY);
-            addrY += 5;
+            doc.text(clientCity, addrX, addrY);
+            addrY += 4;
         }
         if (clientPostcode) {
-            doc.text(clientPostcode, margin + 60, addrY);
+            doc.text(clientPostcode, addrX, addrY);
         }
     }
     
+    // Separator line after bill to
+    y = 85;
+    doc.setDrawColor(126, 126, 126);
+    doc.line(margin, y, pageWidth - margin, y);
+    
     // ===== ITEMS TABLE =====
-    y = 100;
+    y = 92;
     
     // Table header
-    doc.setFillColor(245, 245, 245);
-    doc.rect(margin, y - 5, contentWidth, 10, 'F');
-    
     doc.setDrawColor(126, 126, 126);
-    doc.line(margin, y - 5, pageWidth - margin, y - 5);
-    doc.line(margin, y + 5, pageWidth - margin, y + 5);
+    doc.line(margin, y, pageWidth - margin, y);
     
-    doc.setFontSize(10);
+    y += 6;
+    doc.setFontSize(11);
     doc.setTextColor(0, 0, 0);
     doc.setFont('helvetica', 'bold');
-    doc.text('DESCRIPTION', margin + 2, y + 1);
-    doc.text('RATE', margin + 110, y + 1);
-    doc.text('QTY', margin + 135, y + 1);
-    doc.text('AMOUNT', margin + 160, y + 1);
+    doc.text('DESCRIPTION', margin + 2, y);
+    doc.text('RATE', margin + 115, y);
+    doc.text('QTY', margin + 140, y);
+    doc.text('AMOUNT', margin + 162, y);
     
-    y += 10;
+    y += 3;
+    doc.line(margin, y, pageWidth - margin, y);
+    
+    y += 5;
     
     // Table rows
     doc.setFont('helvetica', 'normal');
-    doc.setFontSize(9);
+    doc.setFontSize(10);
     
     items.forEach(item => {
         if (item.description || item.qty > 0) {
@@ -541,10 +621,10 @@ function generatePDF() {
             
             // Calculate row height based on description lines
             const lineHeight = 5;
-            const rowHeight = Math.max(descLines.length * lineHeight, 8);
+            const rowHeight = Math.max(descLines.length * lineHeight + 4, 10);
             
             // Check if we need a new page
-            if (y + rowHeight > 270) {
+            if (y + rowHeight > 265) {
                 doc.addPage();
                 y = 20;
             }
@@ -553,31 +633,34 @@ function generatePDF() {
             doc.setTextColor(0, 0, 0);
             let descY = y;
             descLines.forEach(line => {
-                doc.text(`• ${line.substring(0, 60)}`, margin + 2, descY);
+                const truncatedLine = line.length > 55 ? line.substring(0, 55) + '...' : line;
+                doc.text(`• ${truncatedLine}`, margin + 2, descY);
                 descY += lineHeight;
             });
             
-            // Rate, Qty, Amount
-            doc.text(`${currency}${item.rate}`, margin + 110, y);
-            doc.text(`${item.qty}${item.unit}`, margin + 135, y);
-            doc.text(`${currency}${item.amount.toFixed(2)}`, margin + 160, y);
+            // Rate, Qty, Amount - aligned with first line of description
+            doc.text(`${currency}${item.rate}`, margin + 115, y);
+            doc.text(`${item.qty}${item.unit}`, margin + 140, y);
+            doc.text(`${currency}${item.amount.toFixed(2)}`, margin + 162, y);
             
-            y += rowHeight + 3;
+            y += rowHeight;
             
             // Row separator
             doc.setDrawColor(200, 200, 200);
-            doc.line(margin, y - 2, pageWidth - margin, y - 2);
+            doc.line(margin, y, pageWidth - margin, y);
+            y += 3;
         }
     });
     
     // ===== TOTALS =====
-    y += 10;
+    y += 8;
     
     const totalsX = margin + 120;
     
     // Subtotal
     doc.setFontSize(10);
     doc.setFont('helvetica', 'normal');
+    doc.setTextColor(0, 0, 0);
     doc.text('SUBTOTAL', totalsX, y);
     doc.text(`${currency}${total.toFixed(2)}`, pageWidth - margin, y, { align: 'right' });
     
@@ -586,7 +669,7 @@ function generatePDF() {
     doc.line(totalsX, y, pageWidth - margin, y);
     
     // Total
-    y += 8;
+    y += 7;
     doc.setFont('helvetica', 'bold');
     doc.text('TOTAL', totalsX, y);
     doc.text(`${currency}${total.toFixed(2)}`, pageWidth - margin, y, { align: 'right' });
@@ -596,13 +679,13 @@ function generatePDF() {
     doc.line(totalsX, y, pageWidth - margin, y);
     
     // Balance Due
-    y += 8;
+    y += 7;
     doc.setFontSize(11);
     doc.text('BALANCE DUE', totalsX, y);
     doc.text(`GBP ${currency}${total.toFixed(2)}`, pageWidth - margin, y, { align: 'right' });
     
     // ===== PAYMENT INSTRUCTIONS =====
-    y += 25;
+    y += 20;
     
     // Check if we need a new page
     if (y > 240) {
@@ -613,50 +696,46 @@ function generatePDF() {
     doc.setDrawColor(126, 126, 126);
     doc.line(margin, y, pageWidth - margin, y);
     
-    y += 10;
+    y += 8;
     doc.setFontSize(12);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(0, 0, 0);
     doc.text('PAYMENT INSTRUCTIONS:', margin, y);
     
-    y += 8;
+    y += 7;
     doc.setFontSize(10);
     doc.setFont('helvetica', 'normal');
-    doc.setTextColor(100, 100, 100);
+    doc.setTextColor(51, 51, 51);
     doc.text('Please transfer the payment to the following account:', margin, y);
     
-    y += 8;
+    y += 7;
     doc.setTextColor(0, 0, 0);
     doc.setFont('helvetica', 'bold');
-    doc.text('Name: ', margin, y);
+    doc.text('Name:', margin, y);
     doc.setFont('helvetica', 'normal');
-    doc.text(CONFIG.bank.name, margin + 20, y);
+    doc.text(bankName, margin + 18, y);
     
-    y += 6;
+    y += 5;
     doc.setFont('helvetica', 'bold');
-    doc.text('Sort Code: ', margin, y);
+    doc.text('Sort Code:', margin, y);
     doc.setFont('helvetica', 'normal');
-    doc.text(CONFIG.bank.sortCode, margin + 25, y);
+    doc.text(bankSortCode, margin + 25, y);
     
-    y += 6;
+    y += 5;
     doc.setFont('helvetica', 'bold');
-    doc.text('Account Number: ', margin, y);
+    doc.text('Account Number:', margin, y);
     doc.setFont('helvetica', 'normal');
-    doc.text(CONFIG.bank.accountNumber, margin + 38, y);
+    doc.text(bankAccountNumber, margin + 38, y);
     
     // Footer
-    y += 15;
-    doc.setDrawColor(200, 200, 200);
+    y += 12;
+    doc.setDrawColor(126, 126, 126);
     doc.line(margin, y, pageWidth - margin, y);
     
-    y += 6;
+    y += 5;
     doc.setFontSize(9);
-    doc.setTextColor(100, 100, 100);
-    doc.text('Please email ', margin, y);
-    doc.setTextColor(5, 99, 193);
-    doc.text(CONFIG.business.email, margin + 22, y);
-    doc.setTextColor(100, 100, 100);
-    doc.text(' if you have any questions regarding this invoice.', margin + 60, y);
+    doc.setTextColor(51, 51, 51);
+    doc.text(`Please email ${CONFIG.business.email} if you have any questions regarding this invoice.`, margin, y);
     
     // Save the PDF
     const fileName = `Invoice-${invoiceNumber}-${clientName.replace(/\s+/g, '_')}.pdf`;
@@ -720,3 +799,4 @@ window.addItem = addItem;
 window.removeItem = removeItem;
 window.updateItemAndPreview = updateItemAndPreview;
 window.generatePDF = generatePDF;
+window.handleLogoUpload = handleLogoUpload;
