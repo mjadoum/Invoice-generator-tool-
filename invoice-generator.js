@@ -585,11 +585,6 @@ function generatePDF() {
         }
     }
     
-    // Separator line after bill to
-    y = 85;
-    doc.setDrawColor(126, 126, 126);
-    doc.line(margin, y, pageWidth - margin, y);
-    
     // ===== ITEMS TABLE =====
     y = 92;
     
