@@ -453,7 +453,6 @@ function generatePDF() {
         try {
             doc.addImage(logoDataUrl, 'PNG', margin, y, 30, 10);
         } catch (e) {
-            // Fallback text if image fails
             doc.setFontSize(12);
             doc.setTextColor(196, 30, 58);
             doc.setFont('helvetica', 'bold');
@@ -466,7 +465,7 @@ function generatePDF() {
         doc.text('</> Web developer', margin, y + 7);
     }
     
-    // Business Name - positioned to the right of logo
+    // Business Name
     const businessX = margin + 45;
     doc.setFontSize(14);
     doc.setTextColor(0, 0, 0);
@@ -524,7 +523,7 @@ function generatePDF() {
     rightY += 4;
     doc.text(`GBP ${currency}${total.toFixed(2)}`, rightX, rightY, { align: 'right' });
     
-    // Separator line
+    // Separator line after header
     y = 50;
     doc.setDrawColor(126, 126, 126);
     doc.setLineWidth(0.3);
@@ -547,24 +546,25 @@ function generatePDF() {
     doc.setFontSize(10);
     doc.setTextColor(51, 51, 51);
     
+    let billToY = y;
     if (clientPhone) {
-        y += 5;
-        doc.text(clientPhone, margin, y);
+        billToY += 5;
+        doc.text(clientPhone, margin, billToY);
     }
     if (clientMobile) {
-        y += 4;
-        doc.text(clientMobile, margin, y);
+        billToY += 4;
+        doc.text(clientMobile, margin, billToY);
     }
     if (clientEmail) {
-        y += 4;
+        billToY += 4;
         doc.setTextColor(5, 99, 193);
-        doc.text(clientEmail, margin, y);
+        doc.text(clientEmail, margin, billToY);
         doc.setTextColor(51, 51, 51);
     }
     
     // Address (middle column)
     if (clientAddress || clientCity || clientPostcode) {
-        let addrY = 58;
+        let addrY = y;
         const addrX = margin + 55;
         doc.setFont('helvetica', 'bold');
         doc.setTextColor(0, 0, 0);
@@ -586,25 +586,35 @@ function generatePDF() {
     }
     
     // ===== ITEMS TABLE =====
-    y = 92;
+    // Calculate starting Y position for items table
+    y = Math.max(billToY, 80) + 10;
     
-    // Table header
+    // Table column positions
+    const col1X = margin;           // DESCRIPTION
+    const col2X = margin + 115;     // RATE
+    const col3X = margin + 140;     // QTY  
+    const col4X = margin + 165;     // AMOUNT
+    const tableEndX = pageWidth - margin;
+    
+    // Table header - top border
     doc.setDrawColor(126, 126, 126);
-    doc.line(margin, y, pageWidth - margin, y);
+    doc.setLineWidth(0.3);
+    doc.line(margin, y, tableEndX, y);
     
     y += 6;
     doc.setFontSize(11);
     doc.setTextColor(0, 0, 0);
     doc.setFont('helvetica', 'bold');
-    doc.text('DESCRIPTION', margin + 2, y);
-    doc.text('RATE', margin + 115, y);
-    doc.text('QTY', margin + 140, y);
-    doc.text('AMOUNT', margin + 162, y);
+    doc.text('DESCRIPTION', col1X + 2, y);
+    doc.text('RATE', col2X, y);
+    doc.text('QTY', col3X, y);
+    doc.text('AMOUNT', col4X, y);
     
+    // Table header - bottom border
     y += 3;
-    doc.line(margin, y, pageWidth - margin, y);
+    doc.line(margin, y, tableEndX, y);
     
-    y += 5;
+    y += 6;
     
     // Table rows
     doc.setFont('helvetica', 'normal');
@@ -614,73 +624,71 @@ function generatePDF() {
         if (item.description || item.qty > 0) {
             const descLines = item.description.split('\n').filter(line => line.trim());
             
-            // Wrap each description line if too long
-            const maxCharsPerLine = 70;
-            const wrappedLines = [];
+            // Add bullets to each line
+            const bulletLines = descLines.map(line => `• ${line}`);
             
-            descLines.forEach(line => {
-                const bulletLine = `• ${line}`;
-                if (bulletLine.length <= maxCharsPerLine) {
-                    wrappedLines.push(bulletLine);
-                } else {
-                    // Split long lines
-                    let remaining = line;
-                    let isFirst = true;
-                    while (remaining.length > 0) {
-                        const prefix = isFirst ? '• ' : '  ';
-                        const maxLen = maxCharsPerLine - prefix.length;
-                        
-                        // Find a good break point (space)
-                        let breakPoint = maxLen;
-                        if (remaining.length > maxLen) {
-                            const lastSpace = remaining.substring(0, maxLen).lastIndexOf(' ');
-                            if (lastSpace > maxLen * 0.5) {
-                                breakPoint = lastSpace;
-                            }
-                        }
-                        
-                        const chunk = remaining.substring(0, breakPoint).trim();
-                        wrappedLines.push(prefix + chunk);
-                        remaining = remaining.substring(breakPoint).trim();
-                        isFirst = false;
-                    }
-                }
+            // Use jsPDF splitTextToSize to properly wrap text
+            const maxDescWidth = 100; // mm
+            let wrappedLines = [];
+            
+            bulletLines.forEach(line => {
+                const split = doc.splitTextToSize(line, maxDescWidth);
+                wrappedLines = wrappedLines.concat(split);
             });
             
-            // Calculate row height based on wrapped lines
-            const lineHeight = 4.5;
-            const rowHeight = Math.max(wrappedLines.length * lineHeight + 4, 10);
-            
-            // Check if we need a new page
-            if (y + rowHeight > 265) {
-                doc.addPage();
-                y = 20;
+            // If no description, add placeholder
+            if (wrappedLines.length === 0) {
+                wrappedLines = ['• No description'];
             }
             
-            // Description with bullets - full text
+            // Calculate row height
+            const lineHeight = 4;
+            const rowHeight = Math.max(wrappedLines.length * lineHeight + 6, 12);
+            
+            // Check if we need a new page
+            if (y + rowHeight > 270) {
+                doc.addPage();
+                y = 20;
+                
+                // Redraw table header on new page
+                doc.setDrawColor(126, 126, 126);
+                doc.line(margin, y, tableEndX, y);
+                y += 6;
+                doc.setFontSize(11);
+                doc.setFont('helvetica', 'bold');
+                doc.text('DESCRIPTION', col1X + 2, y);
+                doc.text('RATE', col2X, y);
+                doc.text('QTY', col3X, y);
+                doc.text('AMOUNT', col4X, y);
+                y += 3;
+                doc.line(margin, y, tableEndX, y);
+                y += 6;
+                doc.setFont('helvetica', 'normal');
+                doc.setFontSize(9);
+            }
+            
+            // Draw description text
             doc.setTextColor(0, 0, 0);
-            let descY = y;
-            wrappedLines.forEach(line => {
-                doc.text(line, margin + 2, descY);
-                descY += lineHeight;
+            const startY = y;
+            wrappedLines.forEach((line, index) => {
+                doc.text(line, col1X + 2, y + (index * lineHeight));
             });
             
-            // Rate, Qty, Amount - aligned with first line of description
-            doc.text(`${currency}${item.rate}`, margin + 120, y);
-            doc.text(`${item.qty}${item.unit}`, margin + 145, y);
-            doc.text(`${currency}${item.amount.toFixed(2)}`, margin + 168, y);
+            // Draw Rate, Qty, Amount on first line
+            doc.text(`${currency}${item.rate}`, col2X, startY);
+            doc.text(`${item.qty}${item.unit}`, col3X, startY);
+            doc.text(`${currency}${item.amount.toFixed(2)}`, col4X, startY);
             
-            y += rowHeight;
-            
-            // Row separator
+            // Move Y and draw row separator
+            y = startY + (wrappedLines.length * lineHeight) + 4;
             doc.setDrawColor(200, 200, 200);
-            doc.line(margin, y, pageWidth - margin, y);
-            y += 3;
+            doc.line(margin, y, tableEndX, y);
+            y += 4;
         }
     });
     
     // ===== TOTALS =====
-    y += 8;
+    y += 6;
     
     const totalsX = margin + 120;
     
@@ -696,7 +704,7 @@ function generatePDF() {
     doc.line(totalsX, y, pageWidth - margin, y);
     
     // Total
-    y += 7;
+    y += 6;
     doc.setFont('helvetica', 'bold');
     doc.text('TOTAL', totalsX, y);
     doc.text(`${currency}${total.toFixed(2)}`, pageWidth - margin, y, { align: 'right' });
@@ -706,16 +714,16 @@ function generatePDF() {
     doc.line(totalsX, y, pageWidth - margin, y);
     
     // Balance Due
-    y += 7;
+    y += 6;
     doc.setFontSize(11);
     doc.text('BALANCE DUE', totalsX, y);
     doc.text(`GBP ${currency}${total.toFixed(2)}`, pageWidth - margin, y, { align: 'right' });
     
     // ===== PAYMENT INSTRUCTIONS =====
-    y += 20;
+    y += 15;
     
     // Check if we need a new page
-    if (y > 240) {
+    if (y > 245) {
         doc.addPage();
         y = 20;
     }
@@ -723,39 +731,39 @@ function generatePDF() {
     doc.setDrawColor(126, 126, 126);
     doc.line(margin, y, pageWidth - margin, y);
     
-    y += 8;
+    y += 7;
     doc.setFontSize(12);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(0, 0, 0);
     doc.text('PAYMENT INSTRUCTIONS:', margin, y);
     
-    y += 7;
+    y += 6;
     doc.setFontSize(10);
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(51, 51, 51);
     doc.text('Please transfer the payment to the following account:', margin, y);
     
-    y += 7;
+    y += 6;
     doc.setTextColor(0, 0, 0);
     doc.setFont('helvetica', 'bold');
     doc.text('Name:', margin, y);
     doc.setFont('helvetica', 'normal');
-    doc.text(bankName, margin + 18, y);
+    doc.text(bankName, margin + 15, y);
     
     y += 5;
     doc.setFont('helvetica', 'bold');
     doc.text('Sort Code:', margin, y);
     doc.setFont('helvetica', 'normal');
-    doc.text(bankSortCode, margin + 25, y);
+    doc.text(bankSortCode, margin + 22, y);
     
     y += 5;
     doc.setFont('helvetica', 'bold');
     doc.text('Account Number:', margin, y);
     doc.setFont('helvetica', 'normal');
-    doc.text(bankAccountNumber, margin + 38, y);
+    doc.text(bankAccountNumber, margin + 35, y);
     
     // Footer
-    y += 12;
+    y += 10;
     doc.setDrawColor(126, 126, 126);
     doc.line(margin, y, pageWidth - margin, y);
     
