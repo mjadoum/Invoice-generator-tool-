@@ -415,9 +415,6 @@ function formatDate(dateInput) {
 // PDF GENERATION
 // ============================================================
 function generatePDF() {
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF('p', 'mm', 'a4');
-    
     const currency = document.getElementById('currency').value;
     const total = calculateTotal();
     
@@ -440,344 +437,201 @@ function generatePDF() {
     
     const formattedDate = invoiceDate ? formatDate(invoiceDate) : formatDate(new Date());
     
-    // Page settings
-    const pageWidth = 210;
-    const margin = 15;
-    const contentWidth = pageWidth - (margin * 2);
-    
-    let y = 15;
-    
-    // ===== HEADER =====
-    // Logo
-    if (logoDataUrl) {
-        try {
-            doc.addImage(logoDataUrl, 'PNG', margin, y, 30, 10);
-        } catch (e) {
-            doc.setFontSize(12);
-            doc.setTextColor(196, 30, 58);
-            doc.setFont('helvetica', 'bold');
-            doc.text('</> Web developer', margin, y + 7);
-        }
-    } else {
-        doc.setFontSize(12);
-        doc.setTextColor(196, 30, 58);
-        doc.setFont('helvetica', 'bold');
-        doc.text('</> Web developer', margin, y + 7);
-    }
-    
-    // Business Name
-    const businessX = margin + 45;
-    doc.setFontSize(14);
-    doc.setTextColor(0, 0, 0);
-    doc.setFont('helvetica', 'bold');
-    doc.text(CONFIG.business.name, businessX, y);
-    
-    // Business Details
-    doc.setFontSize(10);
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(51, 51, 51);
-    y += 5;
-    doc.text(CONFIG.business.title, businessX, y);
-    y += 4;
-    doc.text(CONFIG.business.address, businessX, y);
-    y += 4;
-    doc.text(CONFIG.business.city, businessX, y);
-    y += 4;
-    doc.text(CONFIG.business.postcode, businessX, y);
-    y += 4;
-    doc.text(CONFIG.business.phone, businessX, y);
-    y += 4;
-    doc.setTextColor(5, 99, 193);
-    doc.text(CONFIG.business.email, businessX, y);
-    
-    // Invoice Details (right side)
-    let rightX = pageWidth - margin;
-    let rightY = 15;
-    
-    doc.setFontSize(11);
-    doc.setTextColor(0, 0, 0);
-    doc.setFont('helvetica', 'bold');
-    doc.text('INVOICE', rightX, rightY, { align: 'right' });
-    rightY += 4;
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(10);
-    doc.text(invoiceNumber, rightX, rightY, { align: 'right' });
-    
-    rightY += 8;
-    doc.setFont('helvetica', 'bold');
-    doc.text('DATE', rightX, rightY, { align: 'right' });
-    rightY += 4;
-    doc.setFont('helvetica', 'normal');
-    doc.text(formattedDate, rightX, rightY, { align: 'right' });
-    
-    rightY += 8;
-    doc.setFont('helvetica', 'bold');
-    doc.text('DUE', rightX, rightY, { align: 'right' });
-    rightY += 4;
-    doc.setFont('helvetica', 'normal');
-    doc.text(dueTerms, rightX, rightY, { align: 'right' });
-    
-    rightY += 8;
-    doc.setFont('helvetica', 'bold');
-    doc.text('BALANCE DUE', rightX, rightY, { align: 'right' });
-    rightY += 4;
-    doc.text(`GBP ${currency}${total.toFixed(2)}`, rightX, rightY, { align: 'right' });
-    
-    // Separator line after header
-    y = 50;
-    doc.setDrawColor(126, 126, 126);
-    doc.setLineWidth(0.3);
-    doc.line(margin, y, pageWidth - margin, y);
-    
-    // ===== BILL TO =====
-    y += 8;
-    doc.setFontSize(9);
-    doc.setTextColor(51, 51, 51);
-    doc.setFont('helvetica', 'normal');
-    doc.text('BILL TO', margin, y);
-    
-    y += 5;
-    doc.setFontSize(12);
-    doc.setTextColor(0, 0, 0);
-    doc.setFont('helvetica', 'bold');
-    doc.text(clientName, margin, y);
-    
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(10);
-    doc.setTextColor(51, 51, 51);
-    
-    let billToY = y;
-    if (clientPhone) {
-        billToY += 5;
-        doc.text(clientPhone, margin, billToY);
-    }
-    if (clientMobile) {
-        billToY += 4;
-        doc.text(clientMobile, margin, billToY);
-    }
-    if (clientEmail) {
-        billToY += 4;
-        doc.setTextColor(5, 99, 193);
-        doc.text(clientEmail, margin, billToY);
-        doc.setTextColor(51, 51, 51);
-    }
-    
-    // Address (middle column)
-    if (clientAddress || clientCity || clientPostcode) {
-        let addrY = y;
-        const addrX = margin + 55;
-        doc.setFont('helvetica', 'bold');
-        doc.setTextColor(0, 0, 0);
-        doc.text('Address:', addrX, addrY);
-        doc.setFont('helvetica', 'normal');
-        doc.setTextColor(51, 51, 51);
-        addrY += 5;
-        if (clientAddress) {
-            doc.text(clientAddress, addrX, addrY);
-            addrY += 4;
-        }
-        if (clientCity) {
-            doc.text(clientCity, addrX, addrY);
-            addrY += 4;
-        }
-        if (clientPostcode) {
-            doc.text(clientPostcode, addrX, addrY);
-        }
-    }
-    
-    // ===== ITEMS TABLE =====
-    // Calculate starting Y position for items table
-    y = Math.max(billToY, 80) + 10;
-    
-    // Table column positions
-    const col1X = margin;           // DESCRIPTION
-    const col2X = margin + 115;     // RATE
-    const col3X = margin + 140;     // QTY  
-    const col4X = margin + 165;     // AMOUNT
-    const tableEndX = pageWidth - margin;
-    
-    // Table header - top border
-    doc.setDrawColor(126, 126, 126);
-    doc.setLineWidth(0.3);
-    doc.line(margin, y, tableEndX, y);
-    
-    y += 6;
-    doc.setFontSize(11);
-    doc.setTextColor(0, 0, 0);
-    doc.setFont('helvetica', 'bold');
-    doc.text('DESCRIPTION', col1X + 2, y);
-    doc.text('RATE', col2X, y);
-    doc.text('QTY', col3X, y);
-    doc.text('AMOUNT', col4X, y);
-    
-    // Table header - bottom border
-    y += 3;
-    doc.line(margin, y, tableEndX, y);
-    
-    y += 6;
-    
-    // Table rows
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(9);
-    
+    // Build items HTML
+    let itemsHtml = '';
     items.forEach(item => {
         if (item.description || item.qty > 0) {
             const descLines = item.description.split('\n').filter(line => line.trim());
+            const descHtml = descLines.length > 0 
+                ? descLines.map(line => `• ${line}`).join('<br>') 
+                : '• No description';
             
-            // Add bullets to each line
-            const bulletLines = descLines.map(line => `• ${line}`);
-            
-            // Use jsPDF splitTextToSize to properly wrap text
-            const maxDescWidth = 100; // mm
-            let wrappedLines = [];
-            
-            bulletLines.forEach(line => {
-                const split = doc.splitTextToSize(line, maxDescWidth);
-                wrappedLines = wrappedLines.concat(split);
-            });
-            
-            // If no description, add placeholder
-            if (wrappedLines.length === 0) {
-                wrappedLines = ['• No description'];
-            }
-            
-            // Calculate row height
-            const lineHeight = 4;
-            const rowHeight = Math.max(wrappedLines.length * lineHeight + 6, 12);
-            
-            // Check if we need a new page
-            if (y + rowHeight > 270) {
-                doc.addPage();
-                y = 20;
-                
-                // Redraw table header on new page
-                doc.setDrawColor(126, 126, 126);
-                doc.line(margin, y, tableEndX, y);
-                y += 6;
-                doc.setFontSize(11);
-                doc.setFont('helvetica', 'bold');
-                doc.text('DESCRIPTION', col1X + 2, y);
-                doc.text('RATE', col2X, y);
-                doc.text('QTY', col3X, y);
-                doc.text('AMOUNT', col4X, y);
-                y += 3;
-                doc.line(margin, y, tableEndX, y);
-                y += 6;
-                doc.setFont('helvetica', 'normal');
-                doc.setFontSize(9);
-            }
-            
-            // Draw description text
-            doc.setTextColor(0, 0, 0);
-            const startY = y;
-            wrappedLines.forEach((line, index) => {
-                doc.text(line, col1X + 2, y + (index * lineHeight));
-            });
-            
-            // Draw Rate, Qty, Amount on first line
-            doc.text(`${currency}${item.rate}`, col2X, startY);
-            doc.text(`${item.qty}${item.unit}`, col3X, startY);
-            doc.text(`${currency}${item.amount.toFixed(2)}`, col4X, startY);
-            
-            // Move Y and draw row separator
-            y = startY + (wrappedLines.length * lineHeight) + 4;
-            doc.setDrawColor(200, 200, 200);
-            doc.line(margin, y, tableEndX, y);
-            y += 4;
+            itemsHtml += `
+                <tr>
+                    <td style="padding: 12px 5px; border-bottom: 1px solid #ccc; vertical-align: top; font-size: 11px; line-height: 1.6;">${descHtml}</td>
+                    <td style="padding: 12px 5px; border-bottom: 1px solid #ccc; text-align: center; vertical-align: top; font-size: 11px;">${currency}${item.rate}</td>
+                    <td style="padding: 12px 5px; border-bottom: 1px solid #ccc; text-align: center; vertical-align: top; font-size: 11px;">${item.qty}${item.unit}</td>
+                    <td style="padding: 12px 5px; border-bottom: 1px solid #ccc; text-align: right; vertical-align: top; font-size: 11px;">${currency}${item.amount.toFixed(2)}</td>
+                </tr>
+            `;
         }
     });
     
-    // ===== TOTALS =====
-    y += 6;
+    // Logo HTML
+    const logoHtml = logoDataUrl 
+        ? `<img src="${logoDataUrl}" style="max-width: 100px; height: auto;">` 
+        : `<div style="font-size: 14px; font-weight: bold; color: #c41e3a;">&lt;/&gt; Web developer</div>`;
     
-    const totalsX = margin + 120;
+    // Create hidden div for PDF content
+    const pdfContent = document.createElement('div');
+    pdfContent.id = 'pdf-content';
+    pdfContent.style.cssText = 'position: absolute; left: -9999px; top: 0; width: 210mm; background: white; font-family: Arial, sans-serif; padding: 15mm;';
     
-    // Subtotal
-    doc.setFontSize(10);
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(0, 0, 0);
-    doc.text('SUBTOTAL', totalsX, y);
-    doc.text(`${currency}${total.toFixed(2)}`, pageWidth - margin, y, { align: 'right' });
+    pdfContent.innerHTML = `
+        <!-- HEADER TABLE -->
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 0;">
+            <tr>
+                <td style="width: 100px; vertical-align: top; padding: 10px 0;">
+                    ${logoHtml}
+                </td>
+                <td style="vertical-align: top; padding: 10px 15px;">
+                    <div style="font-size: 16px; font-weight: bold; margin-bottom: 8px;">${CONFIG.business.name}</div>
+                    <div style="font-size: 11px; color: #333; line-height: 1.6;">
+                        ${CONFIG.business.title}<br>
+                        ${CONFIG.business.address}<br>
+                        ${CONFIG.business.city}<br>
+                        ${CONFIG.business.postcode}<br>
+                        ${CONFIG.business.phone}<br>
+                        <span style="color: #0563C1;">${CONFIG.business.email}</span>
+                    </div>
+                </td>
+                <td style="width: 140px; vertical-align: top; padding: 10px 0; text-align: right;">
+                    <div style="font-size: 12px; font-weight: bold;">INVOICE</div>
+                    <div style="font-size: 11px; margin-bottom: 10px;">${invoiceNumber}</div>
+                    
+                    <div style="font-size: 11px; font-weight: bold; margin-top: 8px;">DATE</div>
+                    <div style="font-size: 11px; margin-bottom: 10px;">${formattedDate}</div>
+                    
+                    <div style="font-size: 11px; font-weight: bold; margin-top: 8px;">DUE</div>
+                    <div style="font-size: 11px; margin-bottom: 10px;">${dueTerms}</div>
+                    
+                    <div style="font-size: 11px; font-weight: bold; margin-top: 8px;">BALANCE DUE</div>
+                    <div style="font-size: 12px;">GBP ${currency}${total.toFixed(2)}</div>
+                </td>
+            </tr>
+        </table>
+        
+        <!-- SEPARATOR LINE -->
+        <div style="border-top: 1px solid #7E7E7E; margin: 15px 0;"></div>
+        
+        <!-- BILL TO TABLE -->
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+            <tr>
+                <td style="width: 33%; vertical-align: top; padding: 5px 0;">
+                    <div style="font-size: 10px; color: #666; margin-bottom: 5px;">BILL TO</div>
+                    <div style="font-size: 14px; font-weight: bold; margin-bottom: 8px;">${clientName}</div>
+                    <div style="font-size: 11px; color: #333; line-height: 1.5;">
+                        ${clientPhone ? clientPhone + '<br>' : ''}
+                        ${clientMobile ? clientMobile + '<br>' : ''}
+                        ${clientEmail ? '<span style="color: #0563C1;">' + clientEmail + '</span>' : ''}
+                    </div>
+                </td>
+                <td style="width: 33%; vertical-align: top; padding: 5px 15px;">
+                    ${clientAddress || clientCity || clientPostcode ? `
+                        <div style="font-size: 11px; font-weight: bold; margin-bottom: 5px;">Address:</div>
+                        <div style="font-size: 11px; color: #333; line-height: 1.5;">
+                            ${clientAddress ? clientAddress + '<br>' : ''}
+                            ${clientCity ? clientCity + '<br>' : ''}
+                            ${clientPostcode || ''}
+                        </div>
+                    ` : ''}
+                </td>
+                <td style="width: 33%;"></td>
+            </tr>
+        </table>
+        
+        <!-- ITEMS TABLE -->
+        <table style="width: 100%; border-collapse: collapse;">
+            <thead>
+                <tr>
+                    <th style="padding: 10px 5px; text-align: left; border-top: 1px solid #7E7E7E; border-bottom: 1px solid #7E7E7E; font-size: 12px; font-weight: bold;">DESCRIPTION</th>
+                    <th style="padding: 10px 5px; text-align: center; border-top: 1px solid #7E7E7E; border-bottom: 1px solid #7E7E7E; font-size: 12px; font-weight: bold; width: 70px;">RATE</th>
+                    <th style="padding: 10px 5px; text-align: center; border-top: 1px solid #7E7E7E; border-bottom: 1px solid #7E7E7E; font-size: 12px; font-weight: bold; width: 70px;">QTY</th>
+                    <th style="padding: 10px 5px; text-align: right; border-top: 1px solid #7E7E7E; border-bottom: 1px solid #7E7E7E; font-size: 12px; font-weight: bold; width: 80px;">AMOUNT</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${itemsHtml}
+            </tbody>
+        </table>
+        
+        <!-- TOTALS -->
+        <table style="width: 100%; border-collapse: collapse; margin-top: 15px;">
+            <tr>
+                <td style="width: 60%;"></td>
+                <td style="padding: 8px 5px; text-align: right; font-size: 11px;">SUBTOTAL</td>
+                <td style="padding: 8px 5px; text-align: right; font-size: 11px; width: 100px; border-bottom: 1px solid #ccc;">${currency}${total.toFixed(2)}</td>
+            </tr>
+            <tr>
+                <td></td>
+                <td style="padding: 8px 5px; text-align: right; font-size: 12px; font-weight: bold;">TOTAL</td>
+                <td style="padding: 8px 5px; text-align: right; font-size: 12px; font-weight: bold; border-bottom: 1px solid #7E7E7E;">${currency}${total.toFixed(2)}</td>
+            </tr>
+            <tr>
+                <td></td>
+                <td style="padding: 10px 5px; text-align: right; font-size: 12px; font-weight: bold;">BALANCE DUE</td>
+                <td style="padding: 10px 5px; text-align: right; font-size: 12px; font-weight: bold;">GBP ${currency}${total.toFixed(2)}</td>
+            </tr>
+        </table>
+        
+        <!-- PAYMENT INSTRUCTIONS -->
+        <div style="border-top: 1px solid #7E7E7E; margin-top: 25px; padding-top: 15px;">
+            <div style="font-size: 13px; font-weight: bold; margin-bottom: 10px;">PAYMENT INSTRUCTIONS:</div>
+            <div style="font-size: 11px; color: #333; margin-bottom: 10px;">Please transfer the payment to the following account:</div>
+            <div style="font-size: 11px; line-height: 1.6;">
+                <strong>Name:</strong> ${bankName}<br>
+                <strong>Sort Code:</strong> ${bankSortCode}<br>
+                <strong>Account Number:</strong> ${bankAccountNumber}
+            </div>
+        </div>
+        
+        <!-- FOOTER -->
+        <div style="border-top: 1px solid #7E7E7E; margin-top: 20px; padding-top: 10px;">
+            <div style="font-size: 10px; color: #666;">
+                Please email <span style="color: #0563C1;">${CONFIG.business.email}</span> if you have any questions regarding this invoice.
+            </div>
+        </div>
+    `;
     
-    y += 2;
-    doc.setDrawColor(200, 200, 200);
-    doc.line(totalsX, y, pageWidth - margin, y);
+    document.body.appendChild(pdfContent);
     
-    // Total
-    y += 6;
-    doc.setFont('helvetica', 'bold');
-    doc.text('TOTAL', totalsX, y);
-    doc.text(`${currency}${total.toFixed(2)}`, pageWidth - margin, y, { align: 'right' });
-    
-    y += 2;
-    doc.setDrawColor(126, 126, 126);
-    doc.line(totalsX, y, pageWidth - margin, y);
-    
-    // Balance Due
-    y += 6;
-    doc.setFontSize(11);
-    doc.text('BALANCE DUE', totalsX, y);
-    doc.text(`GBP ${currency}${total.toFixed(2)}`, pageWidth - margin, y, { align: 'right' });
-    
-    // ===== PAYMENT INSTRUCTIONS =====
-    y += 15;
-    
-    // Check if we need a new page
-    if (y > 245) {
-        doc.addPage();
-        y = 20;
-    }
-    
-    doc.setDrawColor(126, 126, 126);
-    doc.line(margin, y, pageWidth - margin, y);
-    
-    y += 7;
-    doc.setFontSize(12);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(0, 0, 0);
-    doc.text('PAYMENT INSTRUCTIONS:', margin, y);
-    
-    y += 6;
-    doc.setFontSize(10);
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(51, 51, 51);
-    doc.text('Please transfer the payment to the following account:', margin, y);
-    
-    y += 6;
-    doc.setTextColor(0, 0, 0);
-    doc.setFont('helvetica', 'bold');
-    doc.text('Name:', margin, y);
-    doc.setFont('helvetica', 'normal');
-    doc.text(bankName, margin + 15, y);
-    
-    y += 5;
-    doc.setFont('helvetica', 'bold');
-    doc.text('Sort Code:', margin, y);
-    doc.setFont('helvetica', 'normal');
-    doc.text(bankSortCode, margin + 22, y);
-    
-    y += 5;
-    doc.setFont('helvetica', 'bold');
-    doc.text('Account Number:', margin, y);
-    doc.setFont('helvetica', 'normal');
-    doc.text(bankAccountNumber, margin + 35, y);
-    
-    // Footer
-    y += 10;
-    doc.setDrawColor(126, 126, 126);
-    doc.line(margin, y, pageWidth - margin, y);
-    
-    y += 5;
-    doc.setFontSize(9);
-    doc.setTextColor(51, 51, 51);
-    doc.text(`Please email ${CONFIG.business.email} if you have any questions regarding this invoice.`, margin, y);
-    
-    // Save the PDF
-    const fileName = `Invoice-${invoiceNumber}-${clientName.replace(/\s+/g, '_')}.pdf`;
-    doc.save(fileName);
-    
-    // Show success message
-    showNotification(`Invoice downloaded: ${fileName}`);
+    // Use html2canvas to capture the HTML
+    html2canvas(pdfContent, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        backgroundColor: '#ffffff'
+    }).then(canvas => {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF('p', 'mm', 'a4');
+        
+        const imgData = canvas.toDataURL('image/png');
+        const pageWidth = 210;
+        const pageHeight = 297;
+        const margin = 0;
+        
+        const imgWidth = pageWidth;
+        const imgHeight = (canvas.height * imgWidth) / canvas.width;
+        
+        let heightLeft = imgHeight;
+        let position = 0;
+        
+        // Add first page
+        doc.addImage(imgData, 'PNG', margin, position, imgWidth, imgHeight);
+        heightLeft -= pageHeight;
+        
+        // Add additional pages if needed
+        while (heightLeft > 0) {
+            position = heightLeft - imgHeight;
+            doc.addPage();
+            doc.addImage(imgData, 'PNG', margin, position, imgWidth, imgHeight);
+            heightLeft -= pageHeight;
+        }
+        
+        // Save the PDF
+        const fileName = `Invoice-${invoiceNumber}-${clientName.replace(/\s+/g, '_')}.pdf`;
+        doc.save(fileName);
+        
+        // Remove hidden div
+        document.body.removeChild(pdfContent);
+        
+        // Show success message
+        showNotification(`Invoice downloaded: ${fileName}`);
+    }).catch(err => {
+        console.error('PDF generation error:', err);
+        document.body.removeChild(pdfContent);
+        alert('Error generating PDF. Please try again.');
+    });
 }
 
 // ============================================================
